@@ -73,7 +73,7 @@ class QuizController extends Controller
             'percentage' => $percentage,
         ]);
 
-        return redirect()->route('student.quizzes.result', $attempt)
+        return redirect()->route('student.attempts.result', $attempt)
             ->with('success', 'Quiz submitted successfully.');
     }
 
@@ -121,7 +121,7 @@ class QuizController extends Controller
                 'quiz_id' => $quiz->id,
                 'student_id' => auth()->id()
             ]);
-            return redirect()->route('student.quizzes.result', $existingAttempt)
+            return redirect()->route('student.attempts.result', $existingAttempt)
                 ->with('error', 'You have already attempted this quiz.');
         }
 

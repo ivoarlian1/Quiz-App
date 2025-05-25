@@ -23,35 +23,40 @@ class CheckRole
         Log::info('CheckRole middleware running', [
             'requested_role' => $role,
             'is_authenticated' => Auth::check(),
-            'user' => Auth::check() ? Auth::user()->toArray() : null
+            'user' => Auth::check() ? Auth::user()->toArray() : null,
+            'current_session_role' => session('current_role')
         ]);
 
-        if (!Auth::check()) {
-            Log::warning('User not authenticated');
+        $user = Auth::user();
+        
+        if (!$user) {
             return redirect()->route('login');
         }
 
-        $user = Auth::user();
-
-        if (!$user->role) {
-            Log::warning('User has no role assigned');
+        // Check if user has the required role in database
+        if ($user->role !== $role) {
+            // Clear all role-related sessions
+            session()->forget(['current_role', 'role_teacher_' . $user->id, 'role_student_' . $user->id]);
+            
+            // Redirect to role selection if no role or wrong role
             return redirect()->route('role.create');
         }
 
-        Log::info('Checking role', [
-            'user_role' => $user->role,
-            'required_role' => $role
-        ]);
+        // Set current role in session
+        session(['current_role' => $role]);
 
-        if ($user->role !== $role) {
-            Log::warning('Unauthorized: User role does not match required role', [
-                'user_role' => $user->role,
-                'required_role' => $role
-            ]);
-            abort(403, 'Unauthorized action.');
+        // Verify session role matches requested role
+        if (session('current_role') !== $role) {
+            session()->forget(['current_role', 'role_teacher_' . $user->id, 'role_student_' . $user->id]);
+            return redirect()->route('role.create');
         }
 
-        Log::info('Role check passed');
+        Log::info('Role check passed', [
+            'user_id' => $user->id,
+            'role' => $role,
+            'session_role' => session('current_role')
+        ]);
+
         return $next($request);
     }
 } 

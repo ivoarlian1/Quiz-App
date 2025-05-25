@@ -29,19 +29,41 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Question {{ $index + 1 }}</h5>
-                        <p class="card-text">{{ $question->text }}</p>
+                        <p class="card-text">{{ $question->question_text }}</p>
 
                         <div class="list-group">
-                            @foreach(['A', 'B', 'C', 'D'] as $option)
-                                <label class="list-group-item">
-                                    <input type="radio"
-                                           class="form-check-input me-2"
-                                           name="answers[{{ $question->id }}]"
-                                           value="{{ $option }}"
-                                           required>
-                                    {{ $question->options[$option] }}
-                                </label>
-                            @endforeach
+                            <label class="list-group-item">
+                                <input type="radio"
+                                       class="form-check-input me-2"
+                                       name="answers[{{ $question->id }}]"
+                                       value="a"
+                                       required>
+                                {{ $question->option_a }}
+                            </label>
+                            <label class="list-group-item">
+                                <input type="radio"
+                                       class="form-check-input me-2"
+                                       name="answers[{{ $question->id }}]"
+                                       value="b"
+                                       required>
+                                {{ $question->option_b }}
+                            </label>
+                            <label class="list-group-item">
+                                <input type="radio"
+                                       class="form-check-input me-2"
+                                       name="answers[{{ $question->id }}]"
+                                       value="c"
+                                       required>
+                                {{ $question->option_c }}
+                            </label>
+                            <label class="list-group-item">
+                                <input type="radio"
+                                       class="form-check-input me-2"
+                                       name="answers[{{ $question->id }}]"
+                                       value="d"
+                                       required>
+                                {{ $question->option_d }}
+                            </label>
                         </div>
 
                         <div class="mt-2">
@@ -193,12 +215,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     form.addEventListener('change', updateAnswerCounts);
-
-    // Prevent accidental navigation
-    window.addEventListener('beforeunload', function(e) {
-        e.preventDefault();
-        e.returnValue = '';
-    });
 });
 </script>
 @endpush 

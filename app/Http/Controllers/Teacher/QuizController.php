@@ -5,8 +5,14 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\Question;
+use App\Models\QuizAttempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use Illuminate\Support\Facades\DB;
 
 class QuizController extends Controller
 {
@@ -26,8 +32,9 @@ class QuizController extends Controller
         \Log::info('Quiz creation started', ['request' => $request->all()]);
 
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'time_limit' => ['nullable', 'integer', 'min:1'],
             'questions' => 'required|array|min:1',
             'questions.*.question_text' => 'required|string',
             'questions.*.option_a' => 'required|string',
@@ -43,6 +50,7 @@ class QuizController extends Controller
             $quiz = auth()->user()->quizzes()->create([
                 'title' => $request->title,
                 'description' => $request->description,
+                'time_limit' => $request->time_limit,
                 'is_active' => true,
                 'teacher_id' => auth()->id(),
             ]);
@@ -91,13 +99,28 @@ class QuizController extends Controller
     public function results(Quiz $quiz)
     {
         $this->authorize('view', $quiz);
-        $attempts = $quiz->attempts()->with('user')->latest()->get();
+        
+        // Get latest attempt for each student
+        $attempts = $quiz->attempts()
+            ->with('student')
+            ->select('quiz_attempts.*')
+            ->join(DB::raw('(
+                SELECT student_id, MAX(created_at) as latest_attempt
+                FROM quiz_attempts
+                WHERE quiz_id = ' . $quiz->id . '
+                GROUP BY student_id
+            ) as latest'), function($join) {
+                $join->on('quiz_attempts.student_id', '=', 'latest.student_id')
+                    ->on('quiz_attempts.created_at', '=', 'latest.latest_attempt');
+            })
+            ->latest()
+            ->paginate(10);
         
         $stats = [
-            'total_attempts' => $attempts->count(),
-            'average_score' => $attempts->avg('score'),
-            'highest_score' => $attempts->max('score'),
-            'lowest_score' => $attempts->min('score'),
+            'total_attempts' => $quiz->attempts()->distinct('student_id')->count('student_id'),
+            'average_score' => $quiz->attempts()->avg('percentage') ?? 0,
+            'highest_score' => $quiz->attempts()->max('score') ?? 0,
+            'lowest_score' => $quiz->attempts()->min('score') ?? 0,
         ];
 
         return view('teacher.quizzes.results', compact('quiz', 'attempts', 'stats'));
@@ -106,31 +129,78 @@ class QuizController extends Controller
     public function downloadResults(Quiz $quiz)
     {
         $this->authorize('view', $quiz);
-        $attempts = $quiz->attempts()->with('user')->latest()->get();
+        $attempts = $quiz->attempts()->with('student')->latest()->get();
         
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="quiz-results.csv"',
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set header
+        $sheet->setCellValue('A1', 'Student Name');
+        $sheet->setCellValue('B1', 'Student ID');
+        $sheet->setCellValue('C1', 'Score');
+        $sheet->setCellValue('D1', 'Percentage');
+        $sheet->setCellValue('E1', 'Submission Date');
+        
+        // Style header
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+            ],
         ];
+        $sheet->getStyle('A1:E1')->applyFromArray($headerStyle);
+        
+        // Fill data
+        $row = 2;
+        foreach ($attempts as $attempt) {
+            $sheet->setCellValue('A' . $row, $attempt->student->name);
+            $sheet->setCellValue('B' . $row, $attempt->student->student_id);
+            $sheet->setCellValue('C' . $row, $attempt->score);
+            $sheet->setCellValue('D' . $row, number_format($attempt->percentage, 1) . '%');
+            $sheet->setCellValue('E' . $row, $attempt->created_at->format('Y-m-d H:i:s'));
+            $row++;
+        }
+        
+        // Style data
+        $dataStyle = [
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+            ],
+        ];
+        $sheet->getStyle('A2:E' . ($row - 1))->applyFromArray($dataStyle);
+        
+        // Auto-size columns
+        foreach (range('A', 'E') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        
+        // Create Excel file
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'quiz-results-' . $quiz->id . '.xlsx';
+        
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        
+        // Save file to PHP output
+        $writer->save('php://output');
+        exit;
+    }
 
-        $callback = function() use ($attempts) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['Student Name', 'Student ID', 'Score', 'Percentage', 'Submission Date']);
+    public function showAttempt(Quiz $quiz, QuizAttempt $attempt)
+    {
+        $this->authorize('view', $quiz);
+        
+        if ($attempt->quiz_id !== $quiz->id) {
+            return redirect()->route('teacher.quizzes.results', $quiz)
+                ->with('error', 'Invalid attempt for this quiz.');
+        }
 
-            foreach ($attempts as $attempt) {
-                fputcsv($file, [
-                    $attempt->user->name,
-                    $attempt->user->student_id,
-                    $attempt->score,
-                    $attempt->percentage . '%',
-                    $attempt->created_at->format('Y-m-d H:i:s'),
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return view('teacher.quizzes.attempt-details', compact('quiz', 'attempt'));
     }
 
     public function destroy(Quiz $quiz)
@@ -170,8 +240,9 @@ class QuizController extends Controller
         $this->authorize('update', $quiz);
 
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'time_limit' => ['nullable', 'integer', 'min:1'],
             'questions' => 'required|array|min:1',
             'questions.*.question_text' => 'required|string',
             'questions.*.option_a' => 'required|string',
@@ -187,6 +258,7 @@ class QuizController extends Controller
             $quiz->update([
                 'title' => $request->title,
                 'description' => $request->description,
+                'time_limit' => $request->time_limit,
             ]);
 
             // Delete existing questions

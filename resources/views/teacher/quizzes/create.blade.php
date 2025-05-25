@@ -46,6 +46,15 @@
                         </div>
 
                         <div class="mb-4">
+                            <label for="time_limit" class="form-label">Time Limit (minutes)</label>
+                            <input type="number" class="form-control @error('time_limit') is-invalid @enderror" id="time_limit" name="time_limit" value="{{ old('time_limit') }}" min="1" placeholder="Leave empty for no time limit">
+                            @error('time_limit')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">Set the time limit in minutes. Leave empty if there's no time limit.</div>
+                        </div>
+
+                        <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h4>Questions</h4>
                                 <button type="button" class="btn btn-success" id="addQuestion">

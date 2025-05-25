@@ -38,7 +38,7 @@
                     <div class="card-body">
                         <div class="text-center mb-4">
                             <h4>{{ $attempt->quiz->title }}</h4>
-                            <p class="text-muted">Submitted on {{ $attempt->submitted_at->format('F d, Y H:i') }}</p>
+                            <p class="text-muted">Submitted on {{ $attempt->created_at->format('F d, Y H:i') }}</p>
                         </div>
 
                         <div class="row justify-content-center mb-4">

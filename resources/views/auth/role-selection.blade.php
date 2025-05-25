@@ -3,46 +3,59 @@
 @section('title', 'Select Role - Neuro Quiz')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Select Role</div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">{{ __('Select Your Role') }}</div>
 
-            <div class="card-body">
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <form method="POST" action="{{ route('role.store') }}">
-                    @csrf
-
-                    <div class="mb-3">
-                        <label class="form-label">Select your role:</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="role" id="teacher" value="teacher" {{ old('role') === 'teacher' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="teacher">Teacher</label>
+                <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="role" id="student" value="student" {{ old('role') === 'student' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="student">Student</label>
+                    @endif
+
+                    <form method="POST" action="{{ route('role.store') }}">
+                        @csrf
+
+                        <div class="mb-4">
+                            <label for="role" class="form-label">{{ __('I am a') }}</label>
+                            <select name="role" id="role" class="form-select @error('role') is-invalid @enderror" required onchange="toggleStudentId()">
+                                <option value="">{{ __('Select your role') }}</option>
+                                <option value="teacher" {{ old('role') == 'teacher' ? 'selected' : '' }}>{{ __('Teacher') }}</option>
+                                <option value="student" {{ old('role') == 'student' ? 'selected' : '' }}>{{ __('Student') }}</option>
+                            </select>
+                            @error('role')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
                         </div>
-                    </div>
 
-                    <div class="mb-3" id="studentIdField" style="display: none;">
-                        <label for="student_id" class="form-label">Student ID</label>
-                        <input type="text" class="form-control" id="student_id" name="student_id" value="{{ old('student_id') }}">
-                    </div>
+                        <div id="studentIdField" class="mb-4" style="display: none;">
+                            <label for="student_id" class="form-label">{{ __('Student ID') }}</label>
+                            <input type="text" class="form-control @error('student_id') is-invalid @enderror" 
+                                   id="student_id" name="student_id" value="{{ old('student_id') }}" 
+                                   placeholder="Enter your student ID">
+                            @error('student_id')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                        </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Continue</button>
-                    </div>
-                </form>
+                        <div class="mb-0">
+                            <button type="submit" class="btn btn-primary">
+                                {{ __('Continue') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -51,20 +64,20 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+function toggleStudentId() {
+    const roleSelect = document.getElementById('role');
     const studentIdField = document.getElementById('studentIdField');
-    const roleInputs = document.querySelectorAll('input[name="role"]');
-
-    function toggleStudentIdField() {
-        const selectedRole = document.querySelector('input[name="role"]:checked')?.value;
-        studentIdField.style.display = selectedRole === 'student' ? 'block' : 'none';
+    
+    if (roleSelect.value === 'student') {
+        studentIdField.style.display = 'block';
+        document.getElementById('student_id').required = true;
+    } else {
+        studentIdField.style.display = 'none';
+        document.getElementById('student_id').required = false;
     }
+}
 
-    roleInputs.forEach(input => {
-        input.addEventListener('change', toggleStudentIdField);
-    });
-
-    toggleStudentIdField();
-});
+// Run on page load
+document.addEventListener('DOMContentLoaded', toggleStudentId);
 </script>
 @endpush 

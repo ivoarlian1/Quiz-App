@@ -75,6 +75,29 @@ unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <div class="mb-4">
+                            <label for="time_limit" class="form-label">Time Limit (minutes)</label>
+                            <input type="number" class="form-control <?php $__errorArgs = ['time_limit'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="time_limit" name="time_limit" value="<?php echo e(old('time_limit')); ?>" min="1" placeholder="Leave empty for no time limit">
+                            <?php $__errorArgs = ['time_limit'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                            <div class="form-text">Set the time limit in minutes. Leave empty if there's no time limit.</div>
+                        </div>
+
+                        <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h4>Questions</h4>
                                 <button type="button" class="btn btn-success" id="addQuestion">

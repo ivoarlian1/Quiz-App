@@ -28,7 +28,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = RouteServiceProvider::HOME;
+    protected $redirectTo = '/role';
 
     /**
      * Create a new controller instance.
@@ -49,18 +49,12 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-        if (!$user->role) {
-            return redirect()->route('role.create');
+        // Set current role in session if user already has a role
+        if ($user->role) {
+            session(['current_role' => $user->role]);
+            return redirect()->route($user->role . '.dashboard');
         }
 
-        // Redirect based on role
-        if ($user->role === 'teacher') {
-            return redirect()->route('teacher.dashboard');
-        } elseif ($user->role === 'student') {
-            return redirect()->route('student.dashboard');
-        }
-
-        // Fallback
         return redirect()->route('role.create');
     }
 
@@ -72,8 +66,13 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        $this->guard()->logout();
+        // Clear all role-related sessions before logout
+        if (Auth::check()) {
+            $user = Auth::user();
+            session()->forget(['current_role', 'role_teacher_' . $user->id, 'role_student_' . $user->id]);
+        }
 
+        $this->guard()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

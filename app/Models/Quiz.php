@@ -4,15 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Quiz extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'teacher_id',
         'title',
         'description',
         'token',
         'is_active',
+        'time_limit'
     ];
 
     protected $casts = [

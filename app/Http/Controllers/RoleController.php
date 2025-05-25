@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class RoleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
      * Show the form for creating a new role.
      *
@@ -16,12 +22,11 @@ class RoleController extends Controller
     {
         $user = Auth::user();
         
+        // If user already has a role, redirect to their dashboard
         if ($user->role) {
-            if ($user->role === 'teacher') {
-                return redirect()->route('teacher.dashboard');
-            } elseif ($user->role === 'student') {
-                return redirect()->route('student.dashboard');
-            }
+            // Set current role in session
+            session(['current_role' => $user->role]);
+            return redirect()->route($user->role . '.dashboard');
         }
 
         return view('auth.role-selection');
@@ -41,24 +46,31 @@ class RoleController extends Controller
         ]);
 
         $user = Auth::user();
+        
+        // If user already has a role, don't allow changing it
+        if ($user->role) {
+            session(['current_role' => $user->role]);
+            return redirect()->route($user->role . '.dashboard');
+        }
+
+        // Update user's role in database
         $user->role = $request->role;
         
         if ($request->role === 'student') {
             $user->student_id = $request->student_id;
-        } else {
-            $user->student_id = null;
         }
         
         $user->save();
 
-        // Redirect based on role
-        if ($user->role === 'teacher') {
-            return redirect()->route('teacher.dashboard');
-        } elseif ($user->role === 'student') {
-            return redirect()->route('student.dashboard');
-        }
+        // Set new role in session
+        session(['current_role' => $request->role]);
 
-        // Fallback
-        return redirect()->route('role.create');
+        Log::info('User role updated', [
+            'user_id' => $user->id,
+            'new_role' => $request->role,
+            'session_role' => session('current_role')
+        ]);
+
+        return redirect()->route($request->role . '.dashboard');
     }
 } 

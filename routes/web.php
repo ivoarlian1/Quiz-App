@@ -32,6 +32,7 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\CheckRole::class.':teache
     Route::delete('quizzes/{quiz}', [TeacherQuizController::class, 'destroy'])->name('quizzes.destroy');
     Route::resource('quizzes.questions', QuestionController::class);
     Route::delete('quizzes/{quiz}/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
+    Route::get('quizzes/{quiz}/attempts/{attempt}', [TeacherQuizController::class, 'showAttempt'])->name('quizzes.attempts.show');
 });
 
 // Student Routes

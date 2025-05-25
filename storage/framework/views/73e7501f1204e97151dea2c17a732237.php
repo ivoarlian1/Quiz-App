@@ -81,4 +81,4 @@
     <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
-<?php /**PATH D:\xampp\htdocs\neuroquiz\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+ <?php /**PATH D:\xampp\htdocs\neuroquiz\resources\views/layouts/app.blade.php ENDPATH**/ ?>
