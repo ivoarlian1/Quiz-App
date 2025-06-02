@@ -55,7 +55,7 @@
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Time Limit
-                                    <span class="badge bg-primary rounded-pill">1 Hour</span>
+                                    <span class="badge bg-primary rounded-pill">{{ $quiz->time_limit }} minutes</span>
                                 </li>
                             </ul>
                         </div>
@@ -64,7 +64,7 @@
                             <i class="bi bi-info-circle"></i>
                             <strong>Important:</strong>
                             <ul class="mb-0 mt-2">
-                                <li>You will have 1 hour to complete this quiz.</li>
+                                <li>You will have {{ $quiz->time_limit }} minutes to complete this quiz.</li>
                                 <li>Once you start, the timer cannot be paused.</li>
                                 <li>Make sure you have a stable internet connection.</li>
                                 <li>Do not refresh or close the browser window during the quiz.</li>
@@ -73,9 +73,11 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <a href="{{ route('student.quizzes.attempt', $quiz) }}" class="btn btn-primary" onclick="return confirm('Are you ready to start the quiz?')">
-                                <i class="bi bi-play-circle"></i> Start Quiz
-                            </a>
+                            <form action="{{ route('student.quizzes.attempt', $quiz) }}" method="GET">
+                                <button type="submit" class="btn btn-primary" onclick="return confirm('Are you ready to start the quiz?')">
+                                    <i class="bi bi-play-circle"></i> Start Quiz
+                                </button>
+                            </form>
                             <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Back to Dashboard
                             </a>

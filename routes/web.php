@@ -40,6 +40,7 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\CheckRole::class.':studen
     Route::get('dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
     Route::post('quizzes/take', [StudentQuizController::class, 'take'])->name('quizzes.take');
     Route::get('quizzes/{quiz}', [StudentQuizController::class, 'show'])->name('quizzes.show');
+    Route::get('quizzes/{quiz}/attempt', [StudentQuizController::class, 'attempt'])->name('quizzes.attempt');
     Route::post('quizzes/{quiz}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
     Route::get('attempts/{attempt}/result', [StudentQuizController::class, 'result'])->name('attempts.result');
 });

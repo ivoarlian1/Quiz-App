@@ -13,6 +13,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $attempts = QuizAttempt::where('student_id', $user->id)
+            ->whereNotNull('submitted_at')
             ->with('quiz')
             ->latest()
             ->get();
@@ -38,6 +39,7 @@ class DashboardController extends Controller
         // Check if student has already attempted this quiz
         $existingAttempt = QuizAttempt::where('student_id', auth()->id())
             ->where('quiz_id', $quiz->id)
+            ->whereNotNull('submitted_at')
             ->first();
 
         if ($existingAttempt) {
