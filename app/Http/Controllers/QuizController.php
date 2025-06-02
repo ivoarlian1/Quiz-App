@@ -20,7 +20,10 @@ class QuizController extends Controller
 
     public function index()
     {
-        $quizzes = Auth::user()->quizzes()->latest()->get();
+        $quizzes = Auth::user()->quizzes()
+            ->with(['questions', 'attempts'])
+            ->latest()
+            ->paginate(10);
         return view('teacher.quizzes.index', compact('quizzes'));
     }
 
@@ -50,9 +53,11 @@ class QuizController extends Controller
             'description' => $request->description,
         ]);
 
-        foreach ($request->questions as $questionData) {
-            $quiz->questions()->create($questionData);
-        }
+        $questions = collect($request->questions)->map(function ($questionData) {
+            return new Question($questionData);
+        });
+
+        $quiz->questions()->saveMany($questions);
 
         return redirect()->route('teacher.quizzes.show', $quiz)
             ->with('success', 'Quiz created successfully. Share this token with your students: ' . $quiz->token);
@@ -62,9 +67,11 @@ class QuizController extends Controller
     {
         if (Auth::user()->isTeacher()) {
             $this->authorize('view', $quiz);
+            $quiz->load(['questions', 'attempts.student']);
             return view('teacher.quizzes.show', compact('quiz'));
         }
 
+        $quiz->load('questions');
         return view('student.quizzes.show', compact('quiz'));
     }
 
@@ -83,6 +90,7 @@ class QuizController extends Controller
             'submitted_at' => null,
         ]);
 
+        $quiz->load('questions');
         return view('student.quizzes.attempt', compact('quiz', 'attempt'));
     }
 
@@ -98,7 +106,8 @@ class QuizController extends Controller
         ]);
 
         $score = 0;
-        foreach ($quiz->questions as $question) {
+        $questions = $quiz->questions;
+        foreach ($questions as $question) {
             if (isset($request->answers[$question->id]) && 
                 $question->isCorrect($request->answers[$question->id])) {
                 $score += $question->points;
@@ -139,8 +148,9 @@ class QuizController extends Controller
         $sheet->setCellValue('D1', 'Percentage');
         $sheet->setCellValue('E1', 'Submitted At');
 
+        $attempts = $quiz->attempts()->with('student')->get();
         $row = 2;
-        foreach ($quiz->attempts as $attempt) {
+        foreach ($attempts as $attempt) {
             $sheet->setCellValue('A' . $row, $attempt->student->name);
             $sheet->setCellValue('B' . $row, $attempt->student->student_id);
             $sheet->setCellValue('C' . $row, $attempt->score . '/' . $attempt->total_points);

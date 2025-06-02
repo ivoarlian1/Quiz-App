@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Quiz extends Model
@@ -28,12 +29,21 @@ class Quiz extends Model
         parent::boot();
         
         static::creating(function ($quiz) {
-            do {
-                $token = Str::random(8);
-            } while (static::where('token', $token)->exists());
-            
-            $quiz->token = $token;
+            $quiz->token = static::generateUniqueToken();
         });
+
+        static::saved(function ($quiz) {
+            Cache::forget('quiz_' . $quiz->id . '_total_points');
+        });
+    }
+
+    protected static function generateUniqueToken()
+    {
+        do {
+            $token = Str::random(8);
+        } while (static::where('token', $token)->exists());
+        
+        return $token;
     }
 
     public function teacher()
@@ -53,6 +63,8 @@ class Quiz extends Model
 
     public function getTotalPointsAttribute()
     {
-        return $this->questions->sum('points');
+        return Cache::remember('quiz_' . $this->id . '_total_points', 3600, function () {
+            return $this->questions()->sum('points');
+        });
     }
 } 
