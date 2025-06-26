@@ -1,4 +1,4 @@
-#"***Buat database di MySQL dan sesuaikan .env nya dulu"
+***Buat database di MySQL dan sesuaikan .env nya dulu
 
 
 
